@@ -34,11 +34,15 @@ private:
 	int m_epollfd;
 	TcpServer *m_svr;
 	u_short m_port;
+	bool m_listening;
 protected:
 	void Run(); //override;
 public:
 	Listener(TcpServer *svr, XLog *log, XConfig *cfg, int epoll_fd,ushort port);
 	ushort GetListenPort(){return m_port;}
+	bool IsListening() {
+	    return m_listening;
+	}
 };
 
 }//end of namespace

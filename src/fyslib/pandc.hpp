@@ -30,13 +30,19 @@ class Pandc
 public:
 	Pandc()
 	{
-		m_queue_lock = CreateMutex(false);
+		m_queue_lock = CreateMutex(true);
 		sem_init(&m_sem, 0, 0);
 	}
 	~Pandc()
 	{
 		sem_destroy(&m_sem);
 		DestroyMutex(m_queue_lock);
+	}
+	void Lock() {
+	    LockMutex(m_queue_lock);
+	}
+	void Unlock() {
+	    UnlockMutex(m_queue_lock);
 	}
 	void P(T p)
 	{
@@ -59,8 +65,14 @@ public:
 		bool waited;
 		if (NULL == timeout || (0 == timeout->tv_nsec && 0 == timeout->tv_sec))
 			waited = (0 == sem_trywait(&m_sem));
-		else
-			waited = (0 == sem_timedwait(&m_sem, timeout));
+		else {
+		    timespec ts;
+		    if (clock_gettime(CLOCK_REALTIME, &ts) == -1)
+		        return false;
+		    ts.tv_nsec += timeout->tv_nsec;
+		    ts.tv_sec += timeout->tv_sec;
+			waited = (0 == sem_timedwait(&m_sem, &ts));
+		}
 		if (!waited)
 			return false;
 		AutoMutex auto1(m_queue_lock);

@@ -11,7 +11,7 @@
 #include <sys/epoll.h>
 #include "../fyslib/tthread.h"
 #include "../fyslib/xlog.h"
-#include "../fyslib/pandc.hpp"
+#include "../fyslib/xconfig.h"
 using namespace fyslib;
 #include "types.hpp"
 #include "client.h"
@@ -27,9 +27,9 @@ private:
 	int m_epoll_fd;
 	TcpServer *m_svr;
 	XLog *m_log;
-	Pandc<ClientBuf> *m_recv_queue;
+    XConfig *m_cfg;
 public:
-	Worker(TcpServer *svr,int epoll_fd,XLog *log, Pandc<ClientBuf> *recv_queue);
+	Worker(TcpServer *svr,int epoll_fd,XLog *log, XConfig *cfg);
 	~Worker();
 };
 

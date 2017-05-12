@@ -17,6 +17,7 @@ using namespace std;
 namespace fyslib
 {
 
+string GetBacktraceStr(int signo);
 
 inline void IncPtr(void **p, POINTER inc_bytes)
 {
@@ -86,6 +87,7 @@ string& ReplaceStringI(string &s, const string &OldPattern,
 wstring& ReplaceStringIW(wstring &s, const wstring &OldPattern,
 		const wstring &NewPattern, bool bReplaceAll = true);
 string FormatString(const char* str, ...);
+string Fmt(const char* str, ...);
 wstring FormatStringW(const wchar_t* str, ...);
 string FormatStringEx(size_t buf_size, const char* str, ...);
 wstring FormatStringWEx(size_t buf_size, const wchar_t* str, ...);
@@ -141,6 +143,7 @@ inline long GetFileSizeW(const wchar_t *fn)
 {
 	return GetFileSize(w2c(fn).c_str());
 }
+string LoadStringFromFile(const string &file);
 bool LoadBufferFromFile(const string &file,/*outer*/void **buf,/*outer*/
 		size_t &bufsize);
 inline bool LoadBufferFromFileW(const wstring &file,/*outer*/void **buf,/*outer*/

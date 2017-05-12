@@ -39,15 +39,13 @@ void XConfig::Reload()
 {
 	LoadFromFile(m_file);
 }
-bool XConfig::LoadFromFile(const string &file)
+bool XConfig::LoadFromString(const string cfg)
 {
-	AutoMutex auto1(m_lock);
-	void *buf=NULL;
-	size_t buf_size = 0;
-	if (!LoadBufferFromFile(file,&buf,buf_size))
+	if (cfg.empty())
 		return false;
+	AutoMutex auto1(m_lock);
 	Clear();
-	string s((char*)buf,buf_size);
+	string s(cfg);
 	vector<string> v;
 	SplitString(s,"",v);
 	for(size_t i=0;i<v.size();++i)
@@ -84,8 +82,22 @@ bool XConfig::LoadFromFile(const string &file)
 			continue;
 		}
 	}
-	m_file = file;
 	return true;
+}
+bool XConfig::LoadFromFile(const string &file)
+{
+	void *buf=NULL;
+	size_t buf_size = 0;
+	if (!LoadBufferFromFile(file,&buf,buf_size))
+		return false;
+	string s((char*)buf,buf_size);
+	free(buf);
+	if (LoadFromString(s)) {
+		m_file = file;
+		return true;
+	} else {
+		return false;
+	}
 }
 
 

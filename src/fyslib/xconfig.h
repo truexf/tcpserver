@@ -25,6 +25,7 @@ public:
 	virtual ~XConfig();
 
 	bool LoadFromFile(const string &file);
+	bool LoadFromString(const string cfg);
 	void Reload();
 	bool SaveToFile(const string &file);
 	string Get(const string section,const string ident,string default_value);

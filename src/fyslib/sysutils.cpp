@@ -22,11 +22,35 @@
 #include <pthread.h>
 #include <uuid/uuid.h>
 #include "tthread.h"
+#include <execinfo.h>
 
 using namespace std;
 
 namespace fyslib
 {
+string GetBacktraceStr(int signo) {
+    string ret(FormatString("signo %d,call stack:\n",signo));
+    void *pTrace[256];
+    char **ppszMsg = NULL;
+    size_t uTraceSize = 0;
+    do {
+        if (0 == (uTraceSize = backtrace(pTrace, sizeof(pTrace) / sizeof(void *)))) {
+            break;
+        }
+        if (NULL == (ppszMsg = backtrace_symbols(pTrace, uTraceSize))) {
+            break;
+        }
+        for (size_t i = 0; i < uTraceSize; ++i) {
+              ret += FormatString("%s\n", ppszMsg[i]);
+        }
+    } while (0);
+
+    if (NULL != ppszMsg) {
+        free(ppszMsg);
+        ppszMsg = NULL;
+    }
+    return ret;
+}
 /*
  string 转换为 wstring
  */
@@ -594,6 +618,18 @@ string ParamStr(size_t i)
 		return v[i];
 	return "";
 }
+string LoadStringFromFile(const string &file)
+{
+    void *buf = NULL;
+    size_t buf_len = 0;
+    if (LoadBufferFromFile(file,&buf,buf_len)) {
+        string ret((char*)buf,buf_len);
+        free(buf);
+        return ret;
+    } else {
+        return "";
+    }
+}
 bool LoadBufferFromFile(const string &file,/*outer*/void **buf,/*outer*/
 		size_t &bufsize)
 {
@@ -786,6 +822,19 @@ bool SimpleMatch(const string &afmt, const string& astr)
 	return true;
 }
 
+string Fmt(const char* str, ...) {
+    string ret = str;
+    if (str != NULL)
+    {
+        char vret[8192] = { 0 };
+        va_list vl;
+        va_start(vl, str);
+        vsnprintf(vret, 8192, str, vl);
+        va_end(vl);
+        return string(vret, strlen(vret));
+    }
+    return "";
+}
 string FormatString(const char * str, ...)
 {
 	string ret = str;

@@ -35,6 +35,7 @@ public:
 	string m_uuid;
 	void *m_data;
 	bool m_close_mark;
+	bool m_is_listener;
 	ushort m_listen_port;
 	TcpServer *m_svr;
 
@@ -42,15 +43,18 @@ public:
 	OnSent m_on_sent;
 
 	void Init(int socket_fd, ushort listen_port);
-	bool Send(void *buf,size_t len);
+	bool Send(void *buf,size_t len, int limit); //if wouldblock or fail then return false else return true
+	bool Recv(int limit); //if wouldblock or fail then return false else return true
 	void ClearSendQueue();
 	string GetRemoteIP();
 	void SetData(void *ptr){
 		m_data = ptr;
 	}
+	void Close();
 private:
 	deque<SendBuf> m_send_queue;
 	pthread_mutex_t *m_send_queue_lock;
+	pthread_mutex_t *m_recv_lock;
 };
 
 class ClosedClient
@@ -72,7 +76,8 @@ private:
 
 	ObjectPool<Client> *m_client_pool;
 	map<string, ClosedClient> m_recycling_pool;
-	pthread_mutex_t *m_lock;
+	pthread_mutex_t *m_recycling_pool_lock;
+	pthread_mutex_t *m_new_client_lock;
 	TcpServer *m_svr;
 protected:
 	void Run();

@@ -75,9 +75,15 @@ extern XLog *_log;
 
 const char* FormatLog(XLog *log,const char * str, ...);
 
-#define LOG_ERR(logger,s) logger->LogStr(FormatLog(logger,"ERR %s %s,%d %s\n",NowStr().c_str(),__FILE__,__LINE__,s));
+#define LOG_ERR(logger,s) logger->LogStr(FormatLog(logger,"ERR  %s %s,%d %s\n",NowStr().c_str(),__FILE__,__LINE__,s));
 #define LOG_WARN(logger,s) logger->LogStr(FormatLog(logger,"WARN %s %s,%d %s\n",NowStr().c_str(),__FILE__,__LINE__,s));
 #define LOG_INFO(logger,s) logger->LogStr(FormatLog(logger,"INFO %s %s,%d %s\n",NowStr().c_str(),__FILE__,__LINE__,s));
+
+#ifdef XDEBUG
+#define LOG_DEBUG(logger,s) logger->LogStr(FormatLog(logger,"DEBUG %s %s,%d %s\n",NowStr().c_str(),__FILE__,__LINE__,s));
+#else
+#define LOG_DEBUG(logger,s) ;
+#endif
 
 } //end of namespace
 

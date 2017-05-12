@@ -49,6 +49,15 @@ public:
 	}
 };
 
+class RecvedBuf
+{
+public:
+    void *m_buf;
+    size_t m_len;
+    RecvedBuf(void *bf, size_t len): m_buf(bf),m_len(len){
+    }
+};
+
 
 
 }//end of namespace
