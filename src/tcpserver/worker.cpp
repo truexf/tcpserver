@@ -176,7 +176,6 @@ void Worker::Run()
 Worker::Worker(TcpServer* svr, int epoll_fd, XLog* log, XConfig *cfg):
 		m_svr(svr),m_epoll_fd(epoll_fd),m_log(log),m_cfg(cfg)
 {
-    m_recv_buf_pool.reserve(1024);
 }
 
 Worker::~Worker()
@@ -186,24 +185,12 @@ Worker::~Worker()
 
 void* Worker::PullRecvBuf()
 {
-    if (m_recv_buf_pool.empty()) {
-        void *ret = malloc(RECV_BUF_SIZE);
-        if (ret == NULL) {
-            LOG_ERR(m_log,Fmt("malloc fail, errno %d", errno).c_str());
-            return NULL;
-        } else {
-            return ret;
-        }
-    } else {
-        void *ret = m_recv_buf_pool.back();
-        m_recv_buf_pool.pop_back();
-        return ret;
-    }
+    return m_recv_buf;
 }
 
 void Worker::PushRecvBuf(void *buf)
 {
-    m_recv_buf_pool.push_back(buf);
+    //no op
 }
 
 

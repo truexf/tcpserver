@@ -16,6 +16,7 @@ using namespace fyslib;
 #include "types.hpp"
 #include "client.h"
 #include <vector>
+#include "consts.hpp"
 
 using std::vector;
 
@@ -31,7 +32,7 @@ private:
 	TcpServer *m_svr;
 	XLog *m_log;
     XConfig *m_cfg;
-    vector<void*> m_recv_buf_pool; //buf pool, need not lock
+    char m_recv_buf[RECV_BUF_SIZE];
 public:
 	Worker(TcpServer *svr,int epoll_fd,XLog *log, XConfig *cfg);
 	~Worker();
