@@ -21,6 +21,8 @@ using namespace fyslib;
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include "tcpserver.h"
+#include "worker.h"
+
 
 namespace tcpserver{
 
@@ -78,14 +80,14 @@ string Client::GetRemoteIP()
 	return string(inet_ntoa(addr.sin_addr));
 }
 
-bool Client::Recv(int limit)
+bool Client::Recv(Worker *workerThread,int limit)
 {
     int ret = 0;
     AutoMutex auto1(m_recv_lock);
     void *buf = NULL;
     while (true)
     {
-        buf = malloc(RECV_BUF_SIZE);
+        buf = workerThread->PullRecvBuf();//malloc(RECV_BUF_SIZE);
         if (NULL == buf)
         {
             LOG_ERR(m_svr->m_log,"malloc recv buf fail.");
@@ -126,7 +128,7 @@ bool Client::Recv(int limit)
         }
     }
     if (buf) {
-        free(buf);
+        workerThread->PushRecvBuf(buf);//free(buf);
         buf = NULL;
     }
     return false;

@@ -144,7 +144,7 @@ void Worker::Run()
 		        in = false;
                 for (map<Client*,bool>::iterator it = info.in.begin(); it != info.in.end(); it++) {
                     if (it->second) {
-                        bool again = it->first->Recv(30000);
+                        bool again = it->first->Recv(this,30000);
                         if (again) {
                             in = true;
                         } else {
@@ -176,12 +176,34 @@ void Worker::Run()
 Worker::Worker(TcpServer* svr, int epoll_fd, XLog* log, XConfig *cfg):
 		m_svr(svr),m_epoll_fd(epoll_fd),m_log(log),m_cfg(cfg)
 {
-
+    m_recv_buf_pool.reserve(1024);
 }
 
 Worker::~Worker()
 {
 
+}
+
+void* Worker::PullRecvBuf()
+{
+    if (m_recv_buf_pool.empty()) {
+        void *ret = malloc(RECV_BUF_SIZE);
+        if (ret == NULL) {
+            LOG_ERR(m_log,Fmt("malloc fail, errno %d", errno).c_str());
+            return NULL;
+        } else {
+            return ret;
+        }
+    } else {
+        void *ret = m_recv_buf_pool.back();
+        m_recv_buf_pool.pop_back();
+        return ret;
+    }
+}
+
+void Worker::PushRecvBuf(void *buf)
+{
+    m_recv_buf_pool.push_back(buf);
 }
 
 

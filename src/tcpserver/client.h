@@ -22,6 +22,7 @@ using namespace fyslib;
 
 namespace tcpserver{
 class TcpServer;
+class Worker;
 class Client
 {
 private:
@@ -44,7 +45,7 @@ public:
 
 	void Init(int socket_fd, ushort listen_port);
 	bool Send(void *buf,size_t len, int limit); //if wouldblock or fail then return false else return true
-	bool Recv(int limit); //if wouldblock or fail then return false else return true
+	bool Recv(Worker *workerThread, int limit); //if wouldblock or fail then return false else return true
 	void ClearSendQueue();
 	string GetRemoteIP();
 	void SetData(void *ptr){
