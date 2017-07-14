@@ -3,6 +3,68 @@
  *
  *  Created on: Jul 13, 2017
  *      Author: root
+ *      sample
+ void OnUsConnected(UnixSocketClient *conn) {
+    cout << "client connected" << endl;
+    char sRecved[1024] = {0};
+    for (;;) {
+        int n = conn->Recv(sRecved, 1024);
+        if (n <= 0) {
+            cout<<"recv error: " << errno <<endl;
+            break;
+        }
+        cout << "recved: " << string(sRecved,n) << endl;
+        cout << "send: " << string(sRecved,n) << endl;
+        if (conn->Send(sRecved,n) <= 0) {
+            cout<<"send error: " << errno <<endl;
+            break;
+        }
+    }
+}
+int main() {
+    {
+        string p(ParamStr(1));
+        if (p == "c") {
+            UnixSocketClient *c = new UnixSocketClient();
+            if (c->ConnectServer("/tmp/unix.skt")) {
+                char sRecv[1024] = {0};
+                for(;;) {
+                    char sGet[1024] = {0};
+                    cin.getline(sGet,1023);
+                    string s(sGet);
+                    if (s == "exit" || s== "quit") {
+                        break;
+                    }
+                    cout << "send: " << s << endl;
+                    if (c->Send((void*)s.c_str(),s.length()) <= 0) {
+                        cout << "send error:" << errno << endl;
+                        break;
+                    }
+                    int n = c->Recv(sRecv,1024);
+                    if (n == -1 || n == 0) {
+                        cout << "recv error:" << errno << endl;
+                        break;
+                    }
+                    cout << "recved: " << string(sRecv,n) << endl;
+                }
+            }
+        } else if (p == "s"){
+            UnixSocketServer *us = new UnixSocketServer();
+            us->SetEventHandle(NULL,OnUsConnected);
+            if (us->StartListen("/tmp/unix.skt")) {
+                for(;;) {
+                    string s;
+                    cin >> s;
+                    if (s == "exit") {
+                        break;
+                    }
+                }
+            }
+        }
+        return 0;
+    }
+}
+ *
  */
 
 #ifndef FYSLIB_UNIXSOCKET_H_

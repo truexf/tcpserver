@@ -18,6 +18,7 @@ namespace fyslib{
 int SleepExactly(const struct timespec *t);
 
 TThread *StartAsyncTimer(BaseFuncClass *proc,bool runfirst,const struct timespec *t);
+void AsyncExecute(BaseFuncClass *proc);
 inline void StopAsyncTimer(TThread *thrd)
 {
 	thrd->Stop();

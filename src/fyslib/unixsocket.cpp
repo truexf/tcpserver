@@ -11,6 +11,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/un.h>
+#include "xtimer.h"
 
 namespace fyslib{
 bool UnixSocketClient::ConnectServer(const char* unixFn) {
@@ -98,7 +99,11 @@ void UnixSocketServer::Run() {
         }
         fyslib::UnixSocketClient *client = fyslib::UnixSocketClient::Create(skt);
         if (m_on_connected) {
-            m_on_connected(client);
+            //TThread *StartAsyncTimer(BaseFuncClass *proc,bool runfirst,const struct timespec *t);
+            timespec ts;
+            ts.tv_nsec = 0;
+            ts.tv_sec = 1;
+            AsyncExecute(AutoFunc(m_on_connected,client));
         }
     }
     close(m_socket);

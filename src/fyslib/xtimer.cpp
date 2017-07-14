@@ -49,6 +49,20 @@ protected:
 	}
 };
 
+class _async_executer: public TThread
+{
+public:
+    void Set(BaseFuncClass *p) {
+            m_proc = p;
+    }
+protected:
+    BaseFuncClass *m_proc;
+    void Run() {
+        m_proc->ExecFunc();
+        delete m_proc;
+    }
+};
+
 TThread *StartAsyncTimer(BaseFuncClass *proc,bool runfirst,const struct timespec *t)
 {
 	_sleep_thread *thrd = new _sleep_thread;
@@ -56,6 +70,14 @@ TThread *StartAsyncTimer(BaseFuncClass *proc,bool runfirst,const struct timespec
 	thrd->SetFreeOnTerminate(true);
 	thrd->Start();
 	return thrd;
+}
+
+void AsyncExecute(BaseFuncClass *proc)
+{
+    _async_executer *thrd = new _async_executer;
+    thrd->Set(proc);
+    thrd->SetFreeOnTerminate(true);
+    thrd->Start();
 }
 
 
