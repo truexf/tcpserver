@@ -107,6 +107,7 @@ private:
     pthread_mutexattr_t f_mutex_attr;
     bool f_FreeOnTerminate; //线程结束时自动删除线程对象
     bool f_terminated; //mark if terminated
+    bool f_init_ok;
     static void * Wrapper(void *Param);
     TThread(const TThread&);
     TThread& operator=(const TThread&);

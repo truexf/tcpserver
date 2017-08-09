@@ -45,6 +45,45 @@ TThread::TThread()
 	f_FreeOnTerminate = false;
 	f_started = false;
 	f_ThreadID = 0;
+
+	f_init_ok = false;
+	int iret;
+    iret = pthread_mutexattr_init(&f_mutex_attr);
+    if(iret != 0)
+    {
+        return;
+    }
+    iret = pthread_mutexattr_settype(&f_mutex_attr,PTHREAD_MUTEX_NORMAL);
+    if(iret != 0)
+    {
+        pthread_mutexattr_destroy(&f_mutex_attr);
+        return ;
+    }
+    iret = pthread_mutex_init(&f_mutex,&f_mutex_attr);
+    if(iret != 0)
+    {
+        pthread_mutexattr_destroy(&f_mutex_attr);
+        return ;
+    }
+    iret = pthread_attr_init(&f_thread_attr);
+    if(iret != 0)
+    {
+        pthread_mutexattr_destroy(&f_mutex_attr);
+        pthread_mutex_destroy(&f_mutex);
+        return ;
+    }
+    iret = pthread_attr_setdetachstate(&f_thread_attr,PTHREAD_CREATE_DETACHED);
+    if(iret != 0)
+    {
+        pthread_attr_destroy(&f_thread_attr);
+        pthread_mutexattr_destroy(&f_mutex_attr);
+        pthread_mutex_destroy(&f_mutex);
+        return ;
+    }
+
+    f_init_ok = true;
+
+
 }
 
 TThread::~TThread()
@@ -72,48 +111,7 @@ void * TThread::Wrapper(void * Param)
 
 bool TThread::Start()
 {
-	int iret;
-	iret = pthread_mutexattr_init(&f_mutex_attr);
-	if(iret != 0)
-	{
-		return false;
-	}
-	iret = pthread_mutexattr_settype(&f_mutex_attr,PTHREAD_MUTEX_NORMAL);
-	if(iret != 0)
-	{
-		pthread_mutexattr_destroy(&f_mutex_attr);
-		return false;
-	}
-	iret = pthread_mutex_init(&f_mutex,&f_mutex_attr);
-	if(iret != 0)
-	{
-		pthread_mutexattr_destroy(&f_mutex_attr);
-		return false;
-	}
-	iret = pthread_attr_init(&f_thread_attr);
-	if(iret != 0)
-	{
-		pthread_mutexattr_destroy(&f_mutex_attr);
-		pthread_mutex_destroy(&f_mutex);
-		return false;
-	}
-	iret = pthread_attr_setdetachstate(&f_thread_attr,PTHREAD_CREATE_DETACHED);
-	if(iret != 0)
-	{
-		pthread_attr_destroy(&f_thread_attr);
-		pthread_mutexattr_destroy(&f_mutex_attr);
-		pthread_mutex_destroy(&f_mutex);
-		return false;
-	}
-	iret = pthread_create(&f_ThreadID,&f_thread_attr,Wrapper,(void*)this);
-	if(iret != 0)
-	{
-		pthread_attr_destroy(&f_thread_attr);
-		pthread_mutexattr_destroy(&f_mutex_attr);
-		pthread_mutex_destroy(&f_mutex);
-		return false;
-	}
-	return true;
+	return f_init_ok && (0 == pthread_create(&f_ThreadID,&f_thread_attr,Wrapper,(void*)this));
 }
 
 void TThread::Stop()
