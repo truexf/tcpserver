@@ -116,10 +116,6 @@ bool Client::Recv(Worker *workerThread,int limit)
         if (m_on_recved) {
             m_on_recved(this, buf, sz);
         }
-        if (buf) {
-            free(buf);
-            buf = NULL;
-        }
         if (sz < RECV_BUF_SIZE)
             break;
         ret += sz;

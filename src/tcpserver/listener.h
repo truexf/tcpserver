@@ -39,7 +39,9 @@ protected:
 	void Run(); //override;
 public:
 	Listener(TcpServer *svr, XLog *log, XConfig *cfg, int epoll_fd,ushort port);
+	Listener(int listenFd, TcpServer *svr, XLog *log, XConfig *cfg, int epoll_fd);
 	ushort GetListenPort(){return m_port;}
+	int GetListenFd(){return m_socket;}
 	bool IsListening() {
 	    return m_listening;
 	}

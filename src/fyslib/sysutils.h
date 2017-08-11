@@ -12,6 +12,7 @@
 #include <vector>
 #include <stdlib.h>
 #include <pthread.h>
+#include <set>
 using namespace std;
 
 namespace fyslib
@@ -151,7 +152,7 @@ inline bool LoadBufferFromFileW(const wstring &file,/*outer*/void **buf,/*outer*
 {
 	return LoadBufferFromFile(w2c(file.c_str()), buf, bufsize);
 }
-bool SaveBufferToFile(const string &file, void *buf, size_t bufsize);
+bool SaveBufferToFile(const string &file, const void *buf, size_t bufsize);
 inline bool SaveBufferToFileW(const wstring &file, void *buf, size_t bufsize)
 {
 	return SaveBufferToFile(w2c(file.c_str()), buf, bufsize);
@@ -190,6 +191,10 @@ char *base64_encode(const char* data, int data_len,bool urlencode);
 char *base64_decode(const char* data, int data_len,bool urlencode);
 string base64_encode_string(string data,bool urlencode);
 string base64_decode_string(string data,bool urlencode);
+
+int ForkAndExecute(string path, const vector<string> &argvs, const vector<string> &envs,const set<int> &excludeFds);
+void CloseOnExec(const set<int> &excludeFds);
+void Restart(const set<int> &noCloseFds, int lsnFd);
 
 class MemoryStream
 {

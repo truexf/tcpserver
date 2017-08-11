@@ -54,7 +54,11 @@ public:
 	}
 	T C()
 	{
-		sem_wait(&m_sem);
+	    for(;;) {
+	        int ret = sem_wait(&m_sem);
+	        if (0 == ret)
+	            break;
+		}
 		AutoMutex auto1(m_queue_lock);
 		T ret = m_queue.front();
 		m_queue.pop_front();
@@ -109,7 +113,10 @@ public:
 	}
 	void P(void* p)
 	{
-		sem_wait(&m_sem_free);
+	    for(;;) {
+	        if (0 == sem_wait(&m_sem_free))
+	                break;
+	    }
 		{
 			AutoMutex auto1(m_queue_lock);
 			++m_head;

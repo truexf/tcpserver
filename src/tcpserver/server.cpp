@@ -72,7 +72,7 @@ bool TcpServer::Shutdown(bool force)
     }
     return true;
 }
-bool TcpServer::Startup()
+bool TcpServer::Startup(int lsnFd)
 {
 	m_config = new XConfig();
 	if (m_cfg.empty())
@@ -94,10 +94,10 @@ bool TcpServer::Startup()
 		LOG_ERR(_log,FormatString("create epoll fail.errno %d",errno).c_str());
 		return false;
 	}
+	LOG_INFO(_log,"create epoll success.");
 	m_client_manager = new ClientManager(this);
 	m_client_manager->SetFreeOnTerminate(true);
 	m_client_manager->Start();
-
 	int worker_count = m_config->GetInt(CFG_SERVER_SECTION,CFG_SERVER_WORKER_COUNT,CFGV_DEFAULT_SERVER_WORKER_COUNT);
 	for (int i = 0; i < worker_count; i++)
 	{
@@ -106,9 +106,15 @@ bool TcpServer::Startup()
 		m_workers.push_back(w);
 		w->Start();
 	}
-
 	int port = m_config->GetInt(CFG_SERVER_SECTION,CFG_SERVER_LISTEN_PORT,CFGV_DEFAULT_LISTEN_PORT);
-	m_listener = new Listener(this,_log,m_config,m_epoll_fd,port);
+
+	if (-1 == lsnFd) {
+	    m_listener = new Listener(this,_log,m_config,m_epoll_fd,port);
+	} else {
+	    //(int listenFd, TcpServer *svr, XLog *log, XConfig *cfg, int epoll_fd)
+	    m_listener = new Listener(lsnFd, this, _log, m_config, m_epoll_fd);
+	    LOG_INFO(_log, FormatString("reuse listnfd %d", lsnFd).c_str());
+	}
 	m_listener->SetFreeOnTerminate(true);
 	m_listener->Start();
 	timespec ts;
@@ -143,6 +149,9 @@ bool TcpServer::ReloadConfig()
 }
 ushort TcpServer::GetListenPort() {
     return m_listener->GetListenPort();
+}
+int TcpServer::GetListenFd() {
+    return m_listener->GetListenFd();
 }
 ushort TcpServer::GetListenPort(size_t lsnIndex)
 {

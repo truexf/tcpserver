@@ -47,14 +47,16 @@ public:
     XLog *m_log;
     int m_epoll_fd;
 
-    bool Startup();
+    bool Startup(int lsnFd = -1);
     Listener* StartListener(ushort port);
+    Listener* StartListener1(int listenFd);
     bool Shutdown(bool force);
     bool ReloadConfig();
 
     string GetStatus();
     ushort GetListenPort(size_t lsnIndex);
     ushort GetListenPort();
+    int GetListenFd();
 public:
     TcpServer(const char* cfg_file, XLog *log);
     TcpServer(const string &cfg, XLog *log);

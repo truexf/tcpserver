@@ -23,6 +23,7 @@
 #include <uuid/uuid.h>
 #include "tthread.h"
 #include <execinfo.h>
+#include <sys/resource.h>
 
 using namespace std;
 
@@ -666,7 +667,7 @@ bool LoadBufferFromFile(const string &file,/*outer*/void **buf,/*outer*/
 	return true;
 }
 
-bool SaveBufferToFile(const string &file, void *buf, size_t bufsize)
+bool SaveBufferToFile(const string &file, const void *buf, size_t bufsize)
 {
 	if (file.empty())
 		return false;
@@ -677,7 +678,7 @@ bool SaveBufferToFile(const string &file, void *buf, size_t bufsize)
 		return false;
 	long iretain = bufsize;
 	long iw = 0;
-	void *p = buf;
+	void *p = (void*)buf;
 	while (iretain > 0)
 	{
 		iw = write(fd, p, iretain);
@@ -1466,6 +1467,74 @@ void ForwardBuffer::Grow(POINTER bytes){
 void ForwardBuffer::Reset(){
 	m_size = 0;
 	m_pos = 0;
+}
+
+int ForkAndExecute(string path, const vector<string> &argvs, const vector<string> &envs,const set<int> &excludeFds) {
+    int ret = fork();
+    if (ret > 0) {
+        //parent
+        return ret;
+    } else {
+        CloseOnExec(excludeFds);
+        //int execve(const char *path, char *const argv[], char *const envp[]);
+        char *env[envs.size()+1];
+        env[envs.size()] = NULL;
+        char *arg[argvs.size()+1];
+        arg[argvs.size()] = NULL;
+        for (size_t i = 0; i < envs.size(); i++) {
+            env[i] = (char*)malloc(envs[i].length()+1);
+            memcpy(env[i],envs[i].c_str(), envs[i].length()+1);
+        }
+        for (size_t i = 0; i < argvs.size(); i++) {
+            arg[i] = (char*)malloc(argvs[i].length()+1);
+            memcpy(arg[i],argvs[i].c_str(), argvs[i].length()+1);
+        }
+        ret = execve(path.c_str(), arg, env);
+    }
+
+    return ret;
+}
+
+void CloseOnExec(const set<int> &excludeFds) {
+    struct rlimit rl;
+    if (getrlimit(RLIMIT_NOFILE, &rl) > 0) {
+        if (rl.rlim_max == RLIM_INFINITY) {
+            rl.rlim_max = 65535;
+        }
+        for (int i = 3; i < rl.rlim_max; i++) {
+            if (excludeFds.find(i) == excludeFds.end()) {
+                fcntl(i,F_SETFD,1);
+            }
+        }
+    }
+}
+
+void Restart(const set<int> &noCloseFds, int lsnFd) {
+    CloseOnExec(noCloseFds);
+    vector<string> v;
+    fyslib::GetCommandLineList(v);
+
+    vector<string> v2;
+    char **env = environ;
+    while(*env){
+        if (strcmp(*env,"forkandexecute=1") != 0 && strncmp(*env, "listen_fd", strlen("listen_fd")) != 0) {
+            v2.push_back(*env);
+        }
+        env++;
+    }
+
+    v2.push_back("forkandexecute=1");
+    char s[32] = {0};
+    sprintf(s,"listen_fd=%d",lsnFd);
+    v2.push_back(s);
+
+
+    vector<string> v1;
+    for (size_t i = 0;i<v.size();i++) {
+        v1.push_back(v[i]);
+    }
+
+    ForkAndExecute(v[0],v1,v2,noCloseFds);
 }
 
 }

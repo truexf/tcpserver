@@ -103,6 +103,7 @@ public:
     void SetEventHandle(OnUxSocketError onErr, OnUxSocketConnected onConn){
         m_on_error = onErr;
         m_on_connected = onConn;
+        m_socket = -1;
     }
     bool StartListen(const char* unixFn);
 protected:
