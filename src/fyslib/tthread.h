@@ -36,45 +36,43 @@ inline int DestroyMutex(pthread_mutex_t *mtx)
 	return ret;
 }
 
-class TCondition
-{
-public:
-	TCondition(){
-		pthread_cond_init(&m_cond,NULL);
-		pthread_mutex_init(&m_mtx,NULL);
-	}
-	~TCondition(){
-		pthread_cond_destroy(&m_cond);
-		pthread_mutex_destroy(&m_mtx);
-	}
-	int Wait(const struct timespec *t){
-		if (NULL == t)
-		{
-			AutoMutex auto1(&m_mtx);
-			return pthread_cond_wait(&m_cond,&m_mtx);
-		}
-		else
-		{
-			AutoMutex auto1(&m_mtx);
-			struct timespec st;
-			clock_gettime(CLOCK_REALTIME,&st);
-			st.tv_nsec += t->tv_nsec;
-			st.tv_sec += t->tv_sec;
-			return pthread_cond_timedwait(&m_cond,&m_mtx,&st);
-		}
-	}
-	int Signal(){
-		AutoMutex auto1(&m_mtx);
-		return pthread_cond_signal(&m_cond);
-	}
-	int Broadcast(){
-		AutoMutex auto1(&m_mtx);
-		return pthread_cond_broadcast(&m_cond);
-	}
-private:
-	pthread_mutex_t m_mtx;
-	pthread_cond_t m_cond;
-};
+//class TCondition
+//{
+//public:
+//	TCondition(){
+//		pthread_cond_init(&m_cond,NULL);
+//		pthread_mutex_init(&m_mtx,NULL);
+//	}
+//	~TCondition(){
+//		pthread_cond_destroy(&m_cond);
+//		pthread_mutex_destroy(&m_mtx);
+//	}
+//	int Wait(const struct timespec *t){
+//		if (NULL == t)
+//		{
+//			AutoMutex auto1(&m_mtx);
+//			return pthread_cond_wait(&m_cond,&m_mtx);
+//		}
+//		else
+//		{
+//			AutoMutex auto1(&m_mtx);
+//			struct timespec st;
+//			clock_gettime(CLOCK_REALTIME,&st);
+//			st.tv_nsec += t->tv_nsec;
+//			st.tv_sec += t->tv_sec;
+//			return pthread_cond_timedwait(&m_cond,&m_mtx,&st);
+//		}
+//	}
+//	int Signal(){
+//		return pthread_cond_signal(&m_cond);
+//	}
+//	int Broadcast(){
+//		return pthread_cond_broadcast(&m_cond);
+//	}
+//private:
+//	pthread_mutex_t m_mtx;
+//	pthread_cond_t m_cond;
+//};
 
 
 /*

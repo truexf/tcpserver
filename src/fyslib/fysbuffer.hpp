@@ -21,6 +21,7 @@
 #include <algorithm>
 #include "tthread.h"
 #include "sysutils.h"
+#include "AutoObject.hpp"
 using std::deque;
 
 namespace fyslib{
@@ -71,7 +72,7 @@ public:
     }
     void FreeBuf(void *buf)
     {
-        AutoMutex auto1(*m_lock);
+        AutoMutex auto1(m_lock);
         deque<void*>::iterator it = std::find(m_buf_busy.begin(),m_buf_busy.end(),buf);
         if(m_buf_busy.end() == it)
             return;

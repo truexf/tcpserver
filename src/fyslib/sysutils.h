@@ -13,6 +13,7 @@
 #include <stdlib.h>
 #include <pthread.h>
 #include <set>
+#include <map>
 using namespace std;
 
 namespace fyslib
@@ -67,6 +68,7 @@ inline bool SameTextW(const wstring &a, const wstring &b)
 {
 	return (wcscasecmp(a.c_str(), b.c_str()) == 0);
 }
+void SplitString(const char *s, size_t sz, const char *split, size_t ssz, vector<string> &ret);
 void SplitString(const string &AString, const string &ASplitStr,
 		vector<string> &AStrings);
 void SplitStringW(const wstring &str, const wstring &splitstr,
@@ -93,6 +95,7 @@ wstring FormatStringW(const wchar_t* str, ...);
 string FormatStringEx(size_t buf_size, const char* str, ...);
 wstring FormatStringWEx(size_t buf_size, const wchar_t* str, ...);
 string FillString(string s,size_t width,char fillChar,bool fillLeft);
+long MemFind(const char *s, size_t sz, const char *sub, size_t ssz, bool reverse);
 
 string CreateGUID();
 
@@ -162,12 +165,17 @@ inline bool AppendBuf2FileW(const wstring file, const void *buf, size_t bufsize)
 {
 	return AppendBuf2File(w2c(file.c_str()), buf, bufsize);
 }
+void CharToHex(unsigned char c, unsigned char* buf);
+unsigned char HexToChar(const unsigned char* hex);
 //buffer转16进制
 string BufToHex(unsigned char *buf, unsigned long bufsize);
 //16进制转buffer
 void HexToBuf(const string &strhex,
 /*out*/unsigned char **buf,
 /*out*/unsigned long &bufsize);
+
+string UrlDecode(const char* s);
+string UrlEncode(const char *s);
 
 void GetCommandLineList(vector<string> &lst);
 string ParamStr(size_t i);
@@ -195,6 +203,17 @@ string base64_decode_string(string data,bool urlencode);
 int ForkAndExecute(string path, const vector<string> &argvs, const vector<string> &envs,const set<int> &excludeFds);
 void CloseOnExec(const set<int> &excludeFds);
 void Restart(const set<int> &noCloseFds, int lsnFd);
+string NormalizeHttpHeaderKey(const char *s);
+struct UrlInfo {
+    string proto;
+    string domain;
+    string port;
+    string path;
+    std::map<string,string> params;
+};
+bool ParseUrl(const char *url, UrlInfo *ret);
+string CombineUrlParams(const map<string,string> &params);
+void BreakUrlParam(const char *param, size_t sz, map<string,string> &ret);
 
 class MemoryStream
 {
@@ -213,6 +232,7 @@ public:
 	}
 	bool Write(const MemoryStream &from, long bytes = -1);
 	bool Write(const void *from, long bytes);
+	bool Write(const char *s);
 	bool WriteString(const string &s)
 	{
 		return Write(s.c_str(),s.length());
@@ -244,6 +264,7 @@ public:
 	}
 	void Empty();
 	bool Shrink(long new_size); //
+	long Find(const void *what,long sz, bool reverse);
 private:
 	MemoryStream(const MemoryStream&);
 	MemoryStream& operator=(const MemoryStream&);

@@ -24,6 +24,8 @@ inline void StopAsyncTimer(TThread *thrd)
 	thrd->Stop();
 }
 
+int DoTimeout(BaseFuncClass *proc, const struct timespec *timeout);
+
 }
 
 #endif /* FYSLIB_XTIMER_H_ */

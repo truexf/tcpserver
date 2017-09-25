@@ -12,13 +12,15 @@
 #include "tthread.h"
 #include "pandc.hpp"
 #include <vector>
+#include <deque>
 
 using std::vector;
+using std::deque;
 
 namespace fyslib{
 
 class _PoolThread;
-class ThreadPool
+class ThreadPool: public TThread
 {
 	friend class _PoolThread;
 public:
@@ -43,6 +45,7 @@ private:
 	volatile int m_running_thread_count;
 	Pandc<BaseFuncClass*> *m_task_queue;
 	vector<_PoolThread*> m_workers;
+
 };
 
 }

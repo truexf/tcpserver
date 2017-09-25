@@ -17,7 +17,9 @@
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <arpa/inet.h>
+#include <netdb.h>
 #include <string.h>
+#include <stdlib.h>
 
 inline int CreateTCPSocket()
 {
@@ -92,6 +94,85 @@ inline int AcceptTimeout(int listensockfd, struct timeval *tv,
 		return accept(listensockfd, addr, addrlen);
 	else
 		return nfds;
+}
+
+inline int Ipv4Addr1(const char *domain,const char* serviceOrPort,sockaddr_in *ret) {
+    if (!ret || !domain)
+        return -1;
+    struct addrinfo hints;
+    hints.ai_family = AF_INET;
+    hints.ai_protocol = 0;
+    hints.ai_addr = NULL;
+    hints.ai_addrlen = 0;
+    hints.ai_canonname = NULL;
+    hints.ai_next = NULL;
+    hints.ai_flags = 0;
+    hints.ai_socktype = SOCK_STREAM;
+    addrinfo *addrp;
+    int i = getaddrinfo(domain,serviceOrPort,&hints,&addrp);
+    if (i) {
+        return i;
+    } else {
+        memcpy(ret,addrp->ai_addr,sizeof(sockaddr_in));
+        freeaddrinfo(addrp);
+        return 0;
+    }
+}
+
+inline int Ipv4AddrList(const char *domain,const char* serviceOrPort,sockaddr_in **ret, int *retCount) {
+    if (!ret || !domain)
+        return -1;
+    struct addrinfo hints;
+    hints.ai_family = AF_INET;
+    hints.ai_protocol = 0;
+    hints.ai_addr = NULL;
+    hints.ai_addrlen = 0;
+    hints.ai_canonname = NULL;
+    hints.ai_next = NULL;
+    hints.ai_flags = 0;
+    hints.ai_socktype = SOCK_STREAM;
+    addrinfo *addrp;
+    int iret = getaddrinfo(domain,serviceOrPort,&hints,&addrp);
+    if (iret) {
+        return iret;
+    } else {
+        *retCount = 0;
+        for(addrinfo *rp = addrp; rp != NULL; rp = rp->ai_next) {
+            *retCount = 1 + *retCount;
+        }
+        *ret = (sockaddr_in*)malloc(*retCount * sizeof(sockaddr_in));
+        sockaddr_in *buf = *ret;
+        for(addrinfo *rp = addrp; rp != NULL; rp = rp->ai_next) {
+            memcpy(buf,addrp->ai_addr,sizeof(sockaddr_in));
+            buf++;
+        }
+
+        freeaddrinfo(addrp);
+        return 0;
+    }
+}
+
+inline void FreeIpv4List(sockaddr_in *addrList) {
+    free(addrList);
+}
+
+inline int DnsLookup(const char *domain, vector<string> &ret) {
+    sockaddr_in *ips;
+    int ipCount=0;
+    if (-1 == Ipv4AddrList(domain,NULL,&ips,&ipCount)) {
+        return -1;
+    }
+    ret.clear();
+    sockaddr_in *ip = ips;
+    char ipStr[16];
+    for (int i = 0; i<ipCount; i++) {
+        ip += i;
+        memset(ipStr,0,sizeof(ipStr));
+        inet_ntop(AF_INET,&ip->sin_addr,ipStr,sizeof(ipStr));
+        ret.push_back(ipStr);
+    }
+    FreeIpv4List(ips);
+    return ipCount;
 }
 
 

@@ -9,6 +9,8 @@
 #include "AutoObject.hpp"
 #include <stdio.h>
 #include <string>
+#include <map>
+using namespace std;
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <errno.h>
@@ -24,6 +26,7 @@
 #include "tthread.h"
 #include <execinfo.h>
 #include <sys/resource.h>
+#include <string.h>
 
 using namespace std;
 
@@ -306,6 +309,29 @@ wstring LowerCaseW(const wstring &str)
 	return ret;
 }
 
+void SplitString(const char *s, size_t sz, const char *split, size_t ssz, vector<string> &ret) {
+    if (!s || !split || sz<=0 || ssz<=0) {
+        return;
+    }
+    ret.clear();
+    size_t prePos = 0;
+    for(size_t i = 0; i<=sz-ssz;) {
+        const char* buf = s+i;
+        if (0==memcmp(buf,split,ssz)) {
+            const char *sL = s+prePos;
+            ret.push_back(string(sL,i-prePos));
+            prePos += ssz;
+            i+=ssz;
+        } else {
+            i++;
+        }
+    }
+    if (prePos < sz) {
+        const char *buf = s+prePos;
+        ret.push_back(string(buf,sz-prePos));
+    }
+}
+
 void SplitString(const string &AString, const string &ASplitStr,
 		vector<string> &AStrings)
 {
@@ -562,6 +588,27 @@ wstring& ReplaceStringIW(wstring &s, const wstring &OldPattern,
 			break;
 	} while (true);
 	return s;
+}
+
+long MemFind(const char *s, size_t sz, const char *sub, size_t ssz, bool reverse) {
+    if (!s || 0==sz || !sub || 0==ssz)
+        return -1;
+    if (!reverse) {
+        for (size_t i=0; i<sz-ssz; i++) {
+            const char *buf = s+i;
+            if (memcmp(buf,sub,ssz) == 0) {
+                return i;
+            }
+        }
+    } else {
+        for (size_t i=sz-ssz; i>=0; i--) {
+            const char *buf = s+i;
+            if (memcmp(buf,sub,ssz) == 0) {
+                return i;
+            }
+        }
+    }
+    return -1;
 }
 
 string Int2Str(long i)
@@ -934,6 +981,105 @@ string CreateGUID()
 	 return string(str,36);
 }
 
+string UrlEncode(const char *s) {
+    if (!s) {
+        return "";
+    }
+    size_t sLen = strlen(s);
+    if (0==sLen)
+        return "";
+
+    unsigned char *ret = (unsigned char*)malloc(sLen*3);
+    size_t j = 0;
+    for(size_t i=0; i<sLen; i++) {
+        if ((s[i] >= '0' && s[i] <= '9') || (s[i] >= 'A' && s[i] <= 'z')) {
+            ret[j] = s[i];
+            j+=1;
+        } else {
+            ret[j] = '%';
+            unsigned char *buf = ret + j + 1;
+            CharToHex((unsigned char)s[i],buf);
+            j+=3;
+        }
+    }
+    return string((char*)ret,j);
+}
+
+string UrlDecode(const char* s) {
+    if (!s)
+        return "";
+    size_t sLen = strlen(s);
+    if (sLen == 0) {
+        return "";
+    }
+    char *ret = (char*)malloc(sLen);
+    size_t j = 0;
+    for (size_t i=0; i<sLen;) {
+        if ('+' == s[i]) {
+            ret[j] = ' ';
+            i++;
+        } else if ('%' != s[i]) {
+            ret[j] = s[i];
+            i++;
+        } else {
+            char *buf = (char*)s + i + 1;
+            ret[j] = HexToChar((unsigned char*)buf);
+            i += 3;
+        }
+        j++;
+    }
+    string sret(ret,j);
+    free(ret);
+    return sret;
+}
+
+void CharToHex(unsigned char c, unsigned char* buf) {
+    if (NULL == buf)
+        return;
+    char m[17] = "0123456789ABCDEF";
+    unsigned char L, R;
+    L = c;
+    L >>= 4;
+    R = c;
+    R <<= 4;
+    R >>= 4;
+    buf[0] = m[L];
+    buf[1] = m[R];
+    return;
+}
+
+unsigned char HexToChar(const unsigned char* hex) {
+    if (!hex)
+        return 0;
+    const unsigned char tbl[256] =
+    { 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+            255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+            255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+            255, 255, 255, 255, 255, 255, 255, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
+            255, 255, 255, 255, 255, 255, 255, 10, 11, 12, 13, 14, 15, 255, 255,
+            255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+            255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 10, 11, 12,
+            13, 14, 15, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+            255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+            255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+            255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+            255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+            255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+            255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+            255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+            255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+            255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+            255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+            255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255 };
+    unsigned char ret = 0;
+    unsigned char L, R;
+    L = tbl[(unsigned long) hex[0]];
+    L <<= 4;
+    R = tbl[(unsigned long) hex[1]];
+    ret = L | R;
+    return ret;
+}
+
 string BufToHex(unsigned char *buf, unsigned long bufsize)
 {
 	if (NULL == buf || bufsize == 0)
@@ -1288,6 +1434,10 @@ long MemoryStream::Read(void *dest, long bytes)
 	return ret;
 }
 
+bool MemoryStream::Write(const char *s) {
+    Write(s, strlen(s));
+}
+
 bool MemoryStream::Write(const MemoryStream &from, long bytes /*= -1*/)
 {
 	if (bytes < -1 || bytes == 0 || bytes > from.GetSize())
@@ -1416,6 +1566,27 @@ bool MemoryStream::Shrink(long new_size)
 	return true;
 }
 
+long MemoryStream::Find(const void *what, long sz, bool reverse) {
+    if (!what || sz<=0)
+        return -1;
+    if (!reverse) {
+        for (long i=0; i<=m_size-sz; i++) {
+            void *buf = AddPtr(m_buffer, i);
+            if (0 == memcmp(buf,what,sz)) {
+                return i;
+            }
+        }
+    } else {
+        for (long i=m_size-sz; i>=0; i--) {
+            void *buf = AddPtr(m_buffer, i);
+            if (0 == memcmp(buf,what,sz)) {
+                return i;
+            }
+        }
+    }
+    return -1;
+}
+
 ForwardBuffer::ForwardBuffer(){
 	m_buffer = NULL;
 	m_size = 0;
@@ -1535,6 +1706,121 @@ void Restart(const set<int> &noCloseFds, int lsnFd) {
     }
 
     ForkAndExecute(v[0],v1,v2,noCloseFds);
+}
+
+string NormalizeHttpHeaderKey(const char *s) {
+    if (!s) {
+        return "";
+    }
+
+    string ret(s);
+    ret[0] = toupper(ret[0]);
+    size_t i = 0;
+    for(;;) {
+        if (i >= ret.length())
+            break;
+        if ('-' == ret[i]) {
+            if (i+1 < ret.length()) {
+                ret[i+1] = toupper(ret[i+1]);
+                //break;
+            }
+        }
+        i++;
+    }
+    return ret;
+}
+
+bool ParseUrl(const char *url, UrlInfo *ret) {
+    if (!url || !ret)
+        return false;
+
+    string s(url);
+    size_t domainPos = 0;
+    if (SameText(s.substr(0,8),"https://")) {
+        ret->proto = "https";
+        domainPos = 8;
+    } else if (SameText(s.substr(0,7),"http://")) {
+        ret->proto = "http";
+        domainPos = 7;
+    } else {
+        ret->proto = "http"; //default
+    }
+    if (domainPos >= s.length())
+        return false;
+    bool domainOk = false;
+    bool portOk = false;
+    bool pathOk =false;
+    for(size_t i=domainPos; i<s.length(); i++) {
+        if (!domainOk) {
+            if (s[i] != ':' && s[i] != '/') {
+                ret->domain += s[i];
+                continue;
+            } else {
+                domainOk = true;
+                if ('/' == s[i]) {
+                    ret->port = "80";
+                    portOk = true;
+                    ret->path += s[i];
+                }
+                continue;
+            }
+        }
+        if (!portOk) {
+            if (s[i] != '/') {
+                ret->port += s[i];
+                continue;
+            } else {
+                portOk = true;
+                ret->path += s[i];
+                continue;
+            }
+        }
+        if (!pathOk) {
+            if (s[i] != '?') {
+                ret->path += s[i];
+                continue;
+            } else {
+                pathOk = true;
+                if (i+1 < s.length()) {
+                    string params(s.substr(i+1));
+                    std::vector<string> paramList;
+                    SplitString(params,"&",paramList);
+                    for (size_t i = 0; i < paramList.size(); i++) {
+                        string l,r;
+                        SplitString(paramList[i],"=",l,r);
+                        if (!l.empty())
+                            ret->params[l] = r;
+                    }
+                    return true;
+                }
+                continue;
+            }
+        }
+
+    }
+    return ret->domain != "" && ret->path != "";
+}
+
+string CombineUrlParams(const map<string,string> &params) {
+    string ret;
+    for (map<string,string>::const_iterator it = params.begin(); it != params.end(); it++) {
+        if (!ret.empty())
+            ret += '&';
+        ret += FormatString("%s=%s",UrlEncode(it->first.c_str()).c_str(),UrlEncode(it->second.c_str()).c_str());
+    }
+    return ret;
+}
+
+void BreakUrlParam(const char *param, size_t sz, map<string,string> &ret) {
+    vector<string> v;
+    SplitString(param,sz,"&",1,v);
+    for (vector<string>::const_iterator it = v.begin(); it != v.end(); it++) {
+        string L,R;
+        SplitString(*it,"=",L,R);
+        if (!L.empty()) {
+            ret[L] = R;
+        }
+    }
 }
 
 }

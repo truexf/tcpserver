@@ -23,7 +23,11 @@ using std::vector;
 
 namespace fyslib
 {
-
+enum QueueType
+{
+  qtFIFO,
+  qtFILO
+};
 template<typename T>
 class Pandc
 {
@@ -32,11 +36,15 @@ public:
 	{
 		m_queue_lock = CreateMutex(true);
 		sem_init(&m_sem, 0, 0);
+		SetQueueType(qtFIFO);
 	}
 	~Pandc()
 	{
 		sem_destroy(&m_sem);
 		DestroyMutex(m_queue_lock);
+	}
+	void SetQueueType(const QueueType tp) {
+	    m_queue_type = tp;
 	}
 	void Lock() {
 	    LockMutex(m_queue_lock);
@@ -48,7 +56,7 @@ public:
 	{
 		{
 			AutoMutex auto1(m_queue_lock);
-			m_queue.push_back(p);
+		    m_queue.push_back(p);
 		}
 		sem_post(&m_sem);
 	}
@@ -60,9 +68,15 @@ public:
 	            break;
 		}
 		AutoMutex auto1(m_queue_lock);
-		T ret = m_queue.front();
-		m_queue.pop_front();
-		return ret;
+		if (qtFIFO == m_queue_type) {
+		    T ret = m_queue.front();
+		    m_queue.pop_front();
+		    return ret;
+		} else {
+            T ret = m_queue.back();
+            m_queue.pop_back();
+            return ret;
+		}
 	}
 	bool TimedC(const struct timespec *timeout, T &ret)
 	{
@@ -80,21 +94,30 @@ public:
 		if (!waited)
 			return false;
 		AutoMutex auto1(m_queue_lock);
-		ret = m_queue.front();
-		m_queue.pop_front();
-		return true;
+		if (qtFIFO == m_queue_type) {
+            ret = m_queue.front();
+            m_queue.pop_front();
+		} else {
+            ret = m_queue.back();
+            m_queue.pop_back();
+		}
+        return true;
+	}
+	size_t GetSize() {
+	    return m_queue.size();
 	}
 private:
 	deque<T> m_queue;
 	pthread_mutex_t *m_queue_lock;
 	sem_t m_sem;
+	QueueType m_queue_type;
 };
 
 
 class LimitedPandc
 {
 public:
-	LimitedPandc(int queue_len)
+	LimitedPandc(int queue_len, QueueType qt)
 	{
 		m_queue_lock = CreateMutex(false);
 		sem_init(&m_sem, 0, 0);
@@ -103,6 +126,8 @@ public:
 		m_head = -1;
 		m_tail = -1;
 		m_queue = new void*[queue_len];
+		m_size = 0;
+		m_queue_type = qt;
 	}
 	~LimitedPandc()
 	{
@@ -123,6 +148,7 @@ public:
 			if(m_head == m_queue_len)
 				m_head = 0;
 			m_queue[m_head] = p;
+			m_size++;
 		}
 		sem_post(&m_sem);
 	}
@@ -148,6 +174,7 @@ public:
 			if(m_head == m_queue_len)
 				m_head = 0;
 			m_queue[m_head] = p;
+			m_size++;
 		}
 		sem_post(&m_sem);
 	}
@@ -157,10 +184,16 @@ public:
 		sem_wait(&m_sem);
 		{
 			AutoMutex auto1(m_queue_lock);
-			++m_tail;
-			if(m_tail == m_queue_len)
-				m_tail = 0;
-			ret = m_queue[m_tail];
+            if (qtFIFO == m_queue_type) {
+                ++m_tail;
+                if(m_tail == m_queue_len)
+                    m_tail = 0;
+                ret = m_queue[m_tail];
+            } else {
+                ret = m_queue[m_head];
+                m_head--;
+            }
+			m_size--;
 		}
 		sem_post(&m_sem_free);
 		return ret;
@@ -183,13 +216,22 @@ public:
 			return false;
 		{
 			AutoMutex auto1(m_queue_lock);
-			++m_tail;
-			if(m_tail == m_queue_len)
-				m_tail = 0;
-			*ret = m_queue[m_tail];
+			if (qtFIFO == m_queue_type) {
+                ++m_tail;
+                if(m_tail == m_queue_len)
+                    m_tail = 0;
+                *ret = m_queue[m_tail];
+			} else {
+			    *ret = m_queue[m_head];
+			    m_head--;
+			}
+			m_size--;
 		}
 		sem_post(&m_sem_free);
 		return true;
+	}
+	size_t GetSize() {
+	    return m_size;
 	}
 private:
 	void** m_queue;
@@ -197,7 +239,8 @@ private:
 	sem_t m_sem;
 	sem_t m_sem_free;
 	int m_head,m_tail,m_queue_len;
-
+	size_t m_size;
+	QueueType m_queue_type;
 };
 
 } //end of namespace
