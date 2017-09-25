@@ -177,6 +177,7 @@ public:
 			m_size++;
 		}
 		sem_post(&m_sem);
+		return true;
 	}
 	void* C()
 	{
