@@ -26,9 +26,8 @@ using namespace fyslib;
 
 namespace tcpserver{
 
-Client::Client(int socket_fd,TcpServer *svr,ushort listen_port): m_socket(socket_fd),m_on_recved(NULL),m_on_sent(NULL),m_close_mark(false),m_svr(svr),m_listen_port(listen_port)
-{
-    m_is_listener = false;
+Client::Client(int socket_fd,TcpServer *svr,ushort listen_port): m_socket(socket_fd),m_close_mark(false),m_is_listener(false),
+        m_listen_port(listen_port),m_svr(svr), m_on_recved(NULL),m_on_sent(NULL) {
 	m_uuid = CreateGUID();
 	m_data = NULL;
 	m_send_queue_lock = CreateMutex(true);

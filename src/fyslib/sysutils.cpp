@@ -1292,7 +1292,7 @@ char *base64_encode(const char* data, int data_len,bool urlencode) {
 			} else {
 				changed[i] = (prepare >> ((3 - i) * 6)) & 0x3F;
 			}
-			*f = base[changed[i]];
+			*f = base[(size_t)changed[i]];
 //printf("%.2X", changed[i]);
 			f++;
 		}
@@ -1435,7 +1435,7 @@ long MemoryStream::Read(void *dest, long bytes)
 }
 
 bool MemoryStream::Write(const char *s) {
-    Write(s, strlen(s));
+    return Write(s, strlen(s));
 }
 
 bool MemoryStream::Write(const MemoryStream &from, long bytes /*= -1*/)
@@ -1672,7 +1672,7 @@ void CloseOnExec(const set<int> &excludeFds) {
         if (rl.rlim_max == RLIM_INFINITY) {
             rl.rlim_max = 65535;
         }
-        for (int i = 3; i < rl.rlim_max; i++) {
+        for (size_t i = 3; i < rl.rlim_max; i++) {
             if (excludeFds.find(i) == excludeFds.end()) {
                 fcntl(i,F_SETFD,1);
             }

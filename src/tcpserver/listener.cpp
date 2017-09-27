@@ -139,17 +139,14 @@ void Listener::Run()
 
 
 Listener::Listener(TcpServer *svr, XLog *log, XConfig *cfg, int epoll_fd, ushort port):
-		m_svr(svr),m_log(log),m_cfg(cfg),m_epollfd(epoll_fd),m_socket(-1),m_port(port)
+        m_socket(-1),m_on_error(NULL),m_log(log),m_cfg(cfg),m_epollfd(epoll_fd),m_svr(svr),m_port(port),m_listening(false)
 {
-       m_on_error = NULL;
-       m_listening = false;
+
 }
 
 Listener::Listener(int listenFd, TcpServer *svr, XLog *log, XConfig *cfg, int epoll_fd):
-    m_svr(svr),m_log(log),m_cfg(cfg),m_epollfd(epoll_fd),m_socket(listenFd),m_port(0)
+        m_socket(listenFd),m_on_error(NULL),m_log(log),m_cfg(cfg),m_epollfd(epoll_fd),m_svr(svr),m_port(0),m_listening(false)
 {
-           m_on_error = NULL;
-           m_listening = false;
 }
 
 

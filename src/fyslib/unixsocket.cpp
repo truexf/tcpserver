@@ -17,7 +17,7 @@ namespace fyslib{
 bool UnixSocketClient::ConnectServer(const char* unixFn) {
     sockaddr_un addr;
     int fnLen = strlen(unixFn);
-    if (fnLen >= sizeof(addr.sun_path)) {
+    if ((size_t)fnLen >= sizeof(addr.sun_path)) {
         return false;
     }
     m_socket = socket(AF_UNIX, SOCK_STREAM, 0);
@@ -57,7 +57,7 @@ bool UnixSocketServer::StartListen(const char* unixFn) {
         return false;
     sockaddr_un addr;
     int fnLen = strlen(unixFn);
-    if (fnLen >= sizeof(addr.sun_path)) {
+    if ((size_t)fnLen >= sizeof(addr.sun_path)) {
         return false;
     }
     unlink(unixFn);

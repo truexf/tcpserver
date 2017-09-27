@@ -17,7 +17,8 @@
 
 void daemonize(int flag)
 {
-	int i, fd0, fd1, fd2;
+	int i;
+	//int fd0, fd1, fd2;
 	pid_t pid;
 	struct rlimit rl;
 	struct sigaction sa;
@@ -71,7 +72,7 @@ void daemonize(int flag)
 	{
 		if (rl.rlim_max == RLIM_INFINITY)
 			rl.rlim_max = 8192;
-		for (i = 0; i < rl.rlim_max; i++)
+		for (i = 0; i < (int)rl.rlim_max; i++)
 			close(i);
 	}
 

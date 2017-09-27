@@ -174,7 +174,7 @@ void Worker::Run()
 }
 
 Worker::Worker(TcpServer* svr, int epoll_fd, XLog* log, XConfig *cfg):
-		m_svr(svr),m_epoll_fd(epoll_fd),m_log(log),m_cfg(cfg)
+        m_epoll_fd(epoll_fd),m_svr(svr),m_log(log),m_cfg(cfg)
 {
 }
 

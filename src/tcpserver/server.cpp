@@ -23,15 +23,16 @@ namespace tcpserver{
 
 
 TcpServer::TcpServer(const char* cfg_file, XLog *log)
-:m_on_client_connected(NULL),m_on_client_disconnected(NULL),m_on_error(NULL),m_on_shutdown(NULL),m_on_starup(NULL),m_listener(NULL),m_config(NULL),m_log(log)
+:m_listener(NULL),m_config(NULL),m_selflog(false),m_on_client_connected(NULL),m_on_client_disconnected(NULL),
+ m_on_starup(NULL),m_on_shutdown(NULL),m_on_error(NULL),m_log(log)
 {
 	m_cfg_file.assign(cfg_file);
 	m_client_manager = NULL;
 	m_epoll_fd = -1;
-	m_selflog = false;
 }
 TcpServer::TcpServer(const string &cfg, XLog *log)
-:m_on_client_connected(NULL),m_on_client_disconnected(NULL),m_on_error(NULL),m_on_shutdown(NULL),m_on_starup(NULL),m_listener(NULL),m_config(NULL),m_log(log)
+:m_listener(NULL),m_config(NULL),m_selflog(false),m_on_client_connected(NULL),m_on_client_disconnected(NULL),
+ m_on_starup(NULL),m_on_shutdown(NULL),m_on_error(NULL),m_log(log)
 {
 	m_cfg.assign(cfg);
 	m_client_manager = NULL;
@@ -56,7 +57,7 @@ bool TcpServer::Shutdown(bool force)
         }
     }
     SleepExactly(&ts);
-    for (int i = 0; i < m_workers.size(); i++) {
+    for (size_t i = 0; i < m_workers.size(); i++) {
         m_workers[i]->Stop();
     }
     SleepExactly(&ts);
