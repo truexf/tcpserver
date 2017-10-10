@@ -70,6 +70,7 @@ typedef void (*OnTcpClientConnected)(TcpClient *c);
 typedef void (*OnTcpClientDisconnected)(TcpClient *c);
 typedef void (*OnTcpClientDataSent)(TcpClient *c,void *buf, size_t len);
 typedef void (*OnTcpClientDataRecved)(TcpClient *c,void *buf, size_t len);
+typedef void (*OnTcpClientError)(TcpClient *c, int errCode); //errcode: errno, 0:peer shutdown
 
 struct TcpClientBuf
 {
@@ -116,7 +117,9 @@ public:
 
     void Init(XLog *log, int worker_count);
     bool Go();
-    TcpClient *ConnectRemote(timeval *tv, string ip, unsigned short port, OnTcpClientDataRecved onRecved, OnTcpClientDataSent onSent, void *setData);
+    TcpClient *ConnectRemote(timeval *tv, string ip, unsigned short port,
+            OnTcpClientDataRecved onRecved, OnTcpClientDataSent onSent, OnTcpClientError onError,
+            void *setData);
     void RemoveClient(TcpClient *c);
 };
 
@@ -143,6 +146,7 @@ public:
 
     OnTcpClientDataRecved m_on_data_recved;
     OnTcpClientDataSent m_on_data_sent;
+    OnTcpClientError m_on_error;
 
     TcpClient();
     virtual ~TcpClient();

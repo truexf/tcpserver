@@ -12,6 +12,11 @@
 #include "AutoObject.hpp"
 #include <time.h>
 #include <errno.h>
+#include <semaphore.h>
+#include <map>
+#include <string>
+using std::map;
+using std::string;
 
 namespace fyslib{
 
@@ -35,6 +40,47 @@ inline int DestroyMutex(pthread_mutex_t *mtx)
 	delete mtx;
 	return ret;
 }
+
+int SemWait(sem_t *sem, const timespec *timespan);
+//Inter-Thread Communication
+//class ITC {
+//private:
+//    ITC(const ITC&);
+//    ITC& operator=(const ITC&);
+//private:
+//    pthread_mutex_t *m_mutex;
+//    sem_t m_chan;
+//    timespec *m_deadline;
+//    map<string, void*> m_value;
+//public:
+//    ITC() {
+//        m_mutex = CreateMutex(false);
+//        sem_init(&m_chan,false,0);
+//        m_deadline = NULL;
+//    }
+//    virtual ~ITC() {
+//        if (m_mutex) {
+//            DestroyMutex(m_mutex);
+//        }
+//        sem_destroy(&m_chan);
+//        if (m_deadline)
+//            delete m_deadline;
+//    }
+//    timespec* DeadLine() {
+//        return m_deadline;
+//    }
+//    void SetDeadLine(const timespec *deadLine) {
+//        if (deadLine) {
+//            if (!m_deadline) {
+//                m_deadline = new timespec;
+//            }
+//            m_deadline->tv_nsec = deadLine->tv_nsec;
+//            m_deadline->tv_sec = deadLine->tv_sec;
+//        }
+//    }
+//    int WaitDone(const long ms);
+//
+//};
 
 //class TCondition
 //{

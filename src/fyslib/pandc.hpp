@@ -18,6 +18,7 @@
 #include <vector>
 #include <pthread.h>
 #include <time.h>
+#include <errno.h>
 using std::deque;
 using std::vector;
 
@@ -81,15 +82,29 @@ public:
 	bool TimedC(const struct timespec *timeout, T &ret)
 	{
 		bool waited;
-		if (NULL == timeout || (0 == timeout->tv_nsec && 0 == timeout->tv_sec))
+		if(NULL == timeout || timeout->tv_nsec < 0 || timeout->tv_sec < 0 || timeout->tv_nsec > 1000000000)
 			waited = (0 == sem_trywait(&m_sem));
 		else {
 		    timespec ts;
 		    if (clock_gettime(CLOCK_REALTIME, &ts) == -1)
 		        return false;
 		    ts.tv_nsec += timeout->tv_nsec;
+		    if (ts.tv_nsec > 1000000000) {
+		        ts.tv_nsec -= 1000000000;
+		        ts.tv_sec += 1;
+		    }
 		    ts.tv_sec += timeout->tv_sec;
-			waited = (0 == sem_timedwait(&m_sem, &ts));
+		    for(;;) {
+		        if (0 == sem_timedwait(&m_sem, &ts)) {
+		            waited = true;
+		            break;
+		        } else {
+		            if (ETIMEDOUT == errno) {
+		                waited = false;
+		                break;
+		            }
+		        }
+		    }
 		}
 		if (!waited)
 			return false;
@@ -155,7 +170,7 @@ public:
 	bool TimedP(void *p,const struct timespec *timeout)
 	{
 		bool waited;
-		if(NULL == timeout)
+		if(NULL == timeout || timeout->tv_nsec < 0 || timeout->tv_sec < 0 || timeout->tv_nsec > 1000000000)
 			waited = (0 == sem_trywait(&m_sem_free));
 		else
 		{
@@ -164,7 +179,20 @@ public:
 				return false;
 			ts.tv_sec += timeout->tv_sec;
 			ts.tv_nsec += timeout->tv_nsec;
-			waited = (0 == sem_timedwait(&m_sem_free,&ts));
+		    if (ts.tv_nsec > 1000000000) {
+		        ts.tv_nsec -= 1000000000;
+		        ts.tv_sec += 1;
+		    }
+		    for(;;) {
+		        if (0 == sem_timedwait(&m_sem_free,&ts)) {
+		            waited = true;
+		            break;
+		        }
+		        if (ETIMEDOUT == errno) {
+		            waited = false;
+		            break;
+		        }
+		    }
 		}
 		if(!waited)
 			return false;
@@ -202,7 +230,7 @@ public:
 	bool TimedC(const struct timespec *timeout,void **ret)
 	{
 		bool waited;
-		if(NULL == timeout)
+		if(NULL == timeout || timeout->tv_nsec < 0 || timeout->tv_sec < 0 || timeout->tv_nsec > 1000000000)
 			waited = (0 == sem_trywait(&m_sem));
 		else
 		{
@@ -211,7 +239,18 @@ public:
 				return false;
 			ts.tv_sec += timeout->tv_sec;
 			ts.tv_nsec += timeout->tv_nsec;
-			waited = (0 == sem_timedwait(&m_sem,&ts));
+            if (ts.tv_nsec > 1000000000) {
+                ts.tv_nsec -= 1000000000;
+                ts.tv_sec += 1;
+            }
+            for(;;) {
+                waited = (0 == sem_timedwait(&m_sem,&ts));
+                if (waited)
+                    break;
+                if (ETIMEDOUT == errno) {
+                    break;
+                }
+            }
 		}
 		if(!waited)
 			return false;

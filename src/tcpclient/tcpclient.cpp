@@ -36,7 +36,7 @@ bool TcpClientManager::Go()
     return true;
 }
 
-TcpClient * TcpClientManager::ConnectRemote(timeval *tv, string ip, unsigned short port, OnTcpClientDataRecved onRecved, OnTcpClientDataSent onSent, void *setData)
+TcpClient * TcpClientManager::ConnectRemote(timeval *tv, string ip, unsigned short port, OnTcpClientDataRecved onRecved, OnTcpClientDataSent onSent, OnTcpClientError onError, void *setData)
 {
     int skt = socket(AF_INET,SOCK_STREAM,IPPROTO_TCP);
     if (-1 == skt)
@@ -68,6 +68,7 @@ TcpClient * TcpClientManager::ConnectRemote(timeval *tv, string ip, unsigned sho
     }
     c->m_on_data_recved = onRecved;
     c->m_on_data_sent = onSent;
+    c->m_on_error = onError;
     struct epoll_event evt;
     evt.data.ptr = (void*)c;
     evt.events = EPOLLIN | EPOLLOUT | EPOLLRDHUP | EPOLLET;
@@ -143,6 +144,7 @@ TcpClient::TcpClient(): m_socket(-1),m_remote_port(0),m_mgr(NULL),m_close_mark(f
 {
     m_on_data_recved = NULL;
     m_on_data_sent = NULL;
+    m_on_error = NULL;
     m_send_queue_lock = CreateMutex(true);
     m_recv_lock = CreateMutex(true);
     memset(&m_recv_buf,0,sizeof(m_recv_buf));
@@ -188,6 +190,9 @@ bool TcpClient::Send(void *buf,size_t len)
                         wouldblock = true;
                         break;
                     default:
+                        if (m_on_error) {
+                            m_on_error(this, errno);
+                        }
                         LOG_WARN(m_mgr->m_log,FormatString("socket send() fail,errno: %d",errno).c_str());
                         wouldblock = true;
                         m_close_mark = true;
@@ -246,6 +251,9 @@ bool TcpClient::Recv()
             case EWOULDBLOCK: //equal to EAGAIN
                 break;
             default:
+                if (m_on_error) {
+                    m_on_error(this, errno);
+                }
                 LOG_WARN(m_mgr->m_log,FormatString("socket recv() fail,errno: %d",errno).c_str());
                 m_mgr->RemoveClient(this);
                 break;
@@ -254,6 +262,9 @@ bool TcpClient::Recv()
         }
         else if (0==sz)
         {
+            if (m_on_error) {
+                m_on_error(this, 0);
+            }
             //peer shutdown. close socket epoll_ctl_del
             m_mgr->RemoveClient(this);
             break;

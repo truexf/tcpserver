@@ -39,6 +39,32 @@ pthread_mutex_t *CreateMutex(bool recursive)
 	return m_mutex;
 }
 
+int SemWait(sem_t *sem, const timespec *timespan) {
+    if (!sem)
+        return -1;
+    if (NULL == timespan || timespan->tv_nsec < 0 || timespan->tv_sec < 0 || timespan->tv_nsec > 1000000000) {
+        return sem_wait(sem);
+    }
+
+    timespec ts;
+    if (clock_gettime(CLOCK_REALTIME, &ts) == -1) {
+        return -1;
+    }
+    ts.tv_nsec += timespan->tv_nsec;
+    if (ts.tv_nsec > 1000000000) {
+        ts.tv_nsec -= 1000000000;
+        ts.tv_sec += 1;
+    }
+    ts.tv_sec += timespan->tv_sec;
+    for(;;) {
+        int ret = sem_timedwait(sem, &ts);
+        if (0==ret || ETIMEDOUT == errno) {
+            return ret;
+        }
+    }
+    return -1;
+}
+
 TThread::TThread()
 {
 	f_terminated = false;
