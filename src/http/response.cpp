@@ -36,8 +36,11 @@ void FysHttpResponse::Init() {
     m_on_state_change = NULL;
     m_on_state_data = NULL;
 }
-MemoryStream* FysHttpResponse::ToStream() {
-    MemoryStream *stm = new MemoryStream();
+MemoryStream* FysHttpResponse::ToStream(MemoryStream *stream) {
+    MemoryStream *stm = stream;
+    if (!stm)
+        stm = new MemoryStream();
+    stm->Empty();
     string ver;
     if (hv10 == m_version)
         ver = "HTTP/1.0";

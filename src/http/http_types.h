@@ -1,8 +1,26 @@
 /*
- * httpclient.h
+ * http client
+ * ================================================================
+ * 1. init
+ *      mgr = new FysHttpConnectionManager;
+ *      mgr.SetConnectionPoolCap(...)
+ *      mgr.SetPickType(...)
+ * 2. http request
+ *      FysHttpRequest *request = new FysHttpRequest;
+ *      request.xxx
+ *      ...
+ *      conn = mgr.PullConnection(...)
+ *      FysHttpResponse *response = new FysHttpResponse;
+ *      if (0 == conn.SendRequest(request,response)) {
+ *          handle response ...
+ *      } else {
+ *         timeout or connection failed...
+ *      }
  *
- *  Created on: Sep 5, 2017
- *      Author: root
+ * http server
+ * ================================================================
+ *
+ *
  */
 
 #ifndef HTTP_HTTP_TYPES_H_
@@ -21,6 +39,7 @@ using std::string;
 using std::map;
 using std::deque;
 using namespace fyslib;
+using namespace tcpserver;
 
 enum HttpChunkedDataState {
     hcdsUnknown,
@@ -124,7 +143,7 @@ protected:
 
     void Init();
 public:
-    virtual MemoryStream *ToStream();
+    virtual MemoryStream *ToStream(MemoryStream *stream);
     virtual ProtoDataState FromStream(const char *inStream, unsigned long sz);
 public:
     FysHttpResponse();
@@ -215,6 +234,8 @@ public:
     int SendRequest(FysHttpRequest *req, FysHttpResponse *res);
 };
 
+
+
 class FysHttpConnectionManager: public TThread {
 public:
     enum PickType {
@@ -250,11 +271,34 @@ public:
     }
 };
 
-
-
 TcpClientManager *GetTcpClientManager();
 
+class FysHttpHandler {
+public:
+    virtual int Execute(FysHttpRequest *request, FysHttpResponse *response) = 0;
+public:
+    virtual ~FysHttpHandler() {
+    }
+};
 
+class FysHttpServer {
+    friend void _on_http_server_client_recved(Client *c,void *buf,size_t len);
+    friend void _on_http_server_client_sent(Client *c,void *buf,size_t len,bool success );
+public:
+    FysHttpServer();
+    virtual ~FysHttpServer();
+private:
+    FysHttpServer(const FysHttpServer&);
+    FysHttpServer& operator=(const FysHttpServer&);
+private:
+    TcpServer *m_tcpserver;
+    map<string, FysHttpHandler*> m_service_mux;
+    pthread_mutex_t *m_service_mux_lock;
+public:
+    void RegisterMux(string path, FysHttpHandler *handler); //unregister: set handler NULL
+    FysHttpHandler *FindMux(string path);
+    bool Start(string configFile, XLog *log);
+};
 
 
 
